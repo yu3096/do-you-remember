@@ -1,4 +1,4 @@
-package com.do.you.remember.backend;
+package com.doyou.remember.backend;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
