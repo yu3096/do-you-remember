@@ -9,10 +9,12 @@ spring:
   h2:
     console:
       enabled: true
-  sql:
-    init:
-      mode: always
-      platform: postgresql
+      path: /h2-console
+  datasource:
+    url: jdbc:h2:mem:doyouremember
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
   servlet:
     multipart:
       max-file-size: 50MB

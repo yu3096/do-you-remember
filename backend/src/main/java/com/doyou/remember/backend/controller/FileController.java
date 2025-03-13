@@ -12,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/files")
@@ -23,6 +24,12 @@ public class FileController {
     public ResponseEntity<Attachment> uploadFile(@RequestParam("file") MultipartFile file) {
         Attachment attachment = fileService.upload(file);
         return ResponseEntity.ok(attachment);
+    }
+
+    @GetMapping("/list")
+    public ResponseEntity<List<Attachment>> getFileList() {
+        List<Attachment> files = fileService.getAllFiles();
+        return ResponseEntity.ok(files);
     }
 
     @GetMapping("/{year}/{month}/{day}/{fileName}")
@@ -37,9 +44,26 @@ public class FileController {
         String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8)
                 .replaceAll("\\+", "%20");
 
+        String contentType = getContentType(fileName);
+        
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + encodedFileName + "\"")
-                .contentType(MediaType.parseMediaType("image/*"))
+                .contentType(MediaType.parseMediaType(contentType))
                 .body(file);
+    }
+
+    private String getContentType(String fileName) {
+        String extension = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
+        switch (extension) {
+            case "jpg":
+            case "jpeg":
+                return "image/jpeg";
+            case "png":
+                return "image/png";
+            case "gif":
+                return "image/gif";
+            default:
+                return "application/octet-stream";
+        }
     }
 } 

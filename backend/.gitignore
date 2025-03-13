@@ -39,3 +39,6 @@ out/
 ### Environment Variables ###
 .env
 application-local.yml
+
+### Uploaded Files ###
+uploads/

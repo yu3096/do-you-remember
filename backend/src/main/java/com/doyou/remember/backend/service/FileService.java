@@ -16,6 +16,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 
@@ -54,6 +56,10 @@ public class FileService {
         } catch (IOException ex) {
             throw new RuntimeException("파일 업로드에 실패했습니다.", ex);
         }
+    }
+
+    public List<Attachment> getAllFiles() {
+        return attachmentRepository.findAll();
     }
 
     public Resource loadAsResource(String filePath) {
