@@ -9,10 +9,20 @@ spring:
   h2:
     console:
       enabled: true
+      path: /h2-console
+  datasource:
+    url: jdbc:h2:mem:doyouremember
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 100MB
 
 server:
   port: 8080
 
-supabase:
-  url: ${SUPABASE_URL}
-  key: ${SUPABASE_KEY} 
+file:
+  upload:
+    location: ${FILE_UPLOAD_PATH:./uploads}  # 기본값으로 프로젝트 루트의 uploads 디렉토리 사용 
