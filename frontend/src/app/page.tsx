@@ -1,6 +1,17 @@
+'use client';
+
+import { useState } from 'react';
 import Image from "next/image";
+import ImageUploader from './components/ImageUploader';
+import ImageGallery from './components/ImageGallery';
 
 export default function Home() {
+  const [images, setImages] = useState<string[]>([]);
+
+  const handleUploadSuccess = (filePath: string) => {
+    setImages(prev => [...prev, filePath]);
+  };
+
   return (
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
@@ -49,6 +60,15 @@ export default function Home() {
           >
             Read our docs
           </a>
+        </div>
+
+        <div className="max-w-2xl mx-auto mb-12">
+          <ImageUploader onUploadSuccess={handleUploadSuccess} />
+        </div>
+
+        <div className="mt-12">
+          <h2 className="text-2xl font-semibold mb-6">업로드된 이미지</h2>
+          <ImageGallery images={images} />
         </div>
       </main>
       <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
