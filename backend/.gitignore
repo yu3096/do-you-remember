@@ -42,3 +42,6 @@ application-local.yml
 
 ### Uploaded Files ###
 uploads/
+
+# Node.js 관련 파일 제외
+node_modules/
