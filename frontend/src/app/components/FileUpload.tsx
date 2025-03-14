@@ -13,7 +13,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
         formData.append('file', file);
       });
 
-      const response = await fetch('/api/files/upload', {
+      const response = await fetch('http://localhost:8080/api/files/upload', {
         method: 'POST',
         body: formData,
       });
