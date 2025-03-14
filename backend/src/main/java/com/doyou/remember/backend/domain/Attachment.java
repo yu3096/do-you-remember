@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -17,6 +20,9 @@ public class Attachment {
     private String fileType;
     private Long fileSize;
     private String storagePath;
+
+    @CreationTimestamp
+    private LocalDateTime createdAt;
 
     @Builder
     public Attachment(String fileName, String fileType, Long fileSize, String storagePath) {
