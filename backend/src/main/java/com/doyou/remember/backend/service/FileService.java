@@ -1,7 +1,9 @@
 package com.doyou.remember.backend.service;
 
 import com.doyou.remember.backend.domain.Attachment;
+import com.doyou.remember.backend.domain.ExifData;
 import com.doyou.remember.backend.repository.AttachmentRepository;
+import com.doyou.remember.backend.repository.ExifDataRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -20,11 +22,14 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class FileService {
     private final AttachmentRepository attachmentRepository;
+    private final ExifDataRepository exifDataRepository;
+    private final ExifService exifService;
 
     @Value("${file.upload.location}")
     private String uploadPath;
@@ -52,7 +57,14 @@ public class FileService {
                     .storagePath(storagePath)
                     .build();
 
-            return attachmentRepository.save(attachment);
+            attachment = attachmentRepository.save(attachment);
+
+            // EXIF 데이터 추출 및 저장
+            if (isImageFile(extension)) {
+                exifService.extractAndSaveExifData(file, attachment);
+            }
+
+            return attachment;
         } catch (IOException ex) {
             throw new RuntimeException("파일 업로드에 실패했습니다.", ex);
         }
@@ -60,6 +72,13 @@ public class FileService {
 
     public List<Attachment> getAllFiles() {
         return attachmentRepository.findAll();
+    }
+
+    public List<Attachment> getFilesByTags(Set<String> tagNames) {
+        if (tagNames == null || tagNames.isEmpty()) {
+            return getAllFiles();
+        }
+        return attachmentRepository.findByTagNames(tagNames);
     }
 
     public Resource loadAsResource(String filePath) {
@@ -104,5 +123,15 @@ public class FileService {
             throw new IllegalArgumentException("잘못된 파일 형식입니다.");
         }
         return fileName.substring(fileName.lastIndexOf(".") + 1);
+    }
+
+    private boolean isImageFile(String extension) {
+        return extension.toLowerCase().matches("jpg|jpeg|png");
+    }
+
+    @Transactional(readOnly = true)
+    public ExifData getExifData(Long attachmentId) {
+        return exifDataRepository.findById(attachmentId)
+                .orElse(null);
     }
 } 

@@ -2,10 +2,10 @@ import React, { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 
 interface FileUploadProps {
-  onUploadSuccess: (filePath: string) => void;
+  onUploadComplete: () => void;
 }
 
-const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
+const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     try {
       const formData = new FormData();
@@ -23,7 +23,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
       }
 
       const data = await response.json();
-      onUploadSuccess(data.filePath);
+      onUploadComplete();
       
       // 파일 업로드 성공 이벤트 발생
       window.dispatchEvent(new Event('fileUploaded'));
@@ -31,7 +31,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
       console.error('Upload error:', error);
       alert('파일 업로드에 실패했습니다.');
     }
-  }, [onUploadSuccess]);
+  }, [onUploadComplete]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

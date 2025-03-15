@@ -1,6 +1,7 @@
 package com.doyou.remember.backend.controller;
 
 import com.doyou.remember.backend.domain.Attachment;
+import com.doyou.remember.backend.domain.ExifData;
 import com.doyou.remember.backend.service.FileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
@@ -13,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/files")
@@ -29,6 +31,12 @@ public class FileController {
     @GetMapping("/list")
     public ResponseEntity<List<Attachment>> getFileList() {
         List<Attachment> files = fileService.getAllFiles();
+        return ResponseEntity.ok(files);
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<Attachment>> searchFilesByTags(@RequestParam(required = false) Set<String> tags) {
+        List<Attachment> files = fileService.getFilesByTags(tags);
         return ResponseEntity.ok(files);
     }
 
@@ -50,6 +58,15 @@ public class FileController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + encodedFileName + "\"")
                 .contentType(MediaType.parseMediaType(contentType))
                 .body(file);
+    }
+
+    @GetMapping("/{id}/exif")
+    public ResponseEntity<ExifData> getExifData(@PathVariable Long id) {
+        ExifData exifData = fileService.getExifData(id);
+        if (exifData == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(exifData);
     }
 
     private String getContentType(String fileName) {

@@ -6,6 +6,20 @@ interface Tag {
   name: string;
 }
 
+interface ExifData {
+  make: string;
+  model: string;
+  dateTime: string;
+  exposureTime: string;
+  fNumber: string;
+  isoSpeedRatings: string;
+  focalLength: string;
+  latitude: number;
+  longitude: number;
+  imageWidth: number;
+  imageHeight: number;
+}
+
 interface File {
   id: number;
   fileName: string;
@@ -29,6 +43,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({ file, onClose }) =>
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [exifData, setExifData] = useState<ExifData | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -54,8 +69,21 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({ file, onClose }) =>
       }
     };
 
+    const fetchExifData = async () => {
+      try {
+        const response = await fetch(`/api/files/${file.id}/exif`);
+        if (response.ok) {
+          const data = await response.json();
+          setExifData(data);
+        }
+      } catch (error) {
+        console.error('EXIF 데이터 가져오기 실패:', error);
+      }
+    };
+
     fetchTags();
     fetchAllTags();
+    fetchExifData();
   }, [file.id]);
 
   useEffect(() => {
@@ -225,61 +253,103 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({ file, onClose }) =>
         <div className="absolute top-4 right-16 z-10 w-64">
           <div className="bg-black bg-opacity-50 text-white p-4 rounded-lg">
             <h3 className="text-sm font-medium mb-2">태그</h3>
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
-                  placeholder="새 태그 입력"
-                  className="flex-1 bg-black bg-opacity-50 text-white text-sm px-3 py-1.5 rounded-lg border border-gray-600 focus:outline-none focus:border-blue-500 placeholder-gray-400"
-                  disabled={isLoading}
-                />
-                <button
-                  onClick={handleAddTag}
-                  className={`${
-                    isLoading 
-                      ? 'bg-gray-500 cursor-not-allowed' 
-                      : 'bg-blue-500 hover:bg-blue-600'
-                  } text-white px-3 py-1.5 rounded-lg text-sm transition-colors duration-200 flex items-center`}
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <span className="inline-block animate-spin mr-1">⌛</span>
-                  ) : null}
-                  추가
-                </button>
+            
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={newTag}
+                onChange={(e) => setNewTag(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
+                placeholder="새 태그 입력"
+                className="flex-1 bg-black bg-opacity-50 text-white text-sm px-3 py-1.5 rounded-lg border border-gray-600 focus:outline-none focus:border-blue-500 placeholder-gray-400"
+                disabled={isLoading}
+              />
+              <button
+                onClick={handleAddTag}
+                className={`${
+                  isLoading 
+                    ? 'bg-gray-500 cursor-not-allowed' 
+                    : 'bg-blue-500 hover:bg-blue-600'
+                } text-white px-3 py-1.5 rounded-lg text-sm transition-colors duration-200 flex items-center`}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <span className="inline-block animate-spin mr-1">⌛</span>
+                ) : null}
+                추가
+              </button>
+            </div>
+            {error && (
+              <div className="text-red-400 text-xs px-2 py-1 bg-red-900 bg-opacity-25 rounded">
+                {error}
               </div>
-              {error && (
-                <div className="text-red-400 text-xs px-2 py-1 bg-red-900 bg-opacity-25 rounded">
-                  {error}
-                </div>
-              )}
-              <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto custom-scrollbar">
-                {tags.map(tag => (
-                  <span
-                    key={tag.id}
-                    className={`inline-flex items-center ${
-                      isLoading ? 'bg-gray-500' : 'bg-blue-500 hover:bg-blue-600'
-                    } text-white text-xs px-2 py-1 rounded-lg transition-colors duration-200`}
+            )}
+            
+            <div className="mt-2 flex flex-wrap gap-1">
+              {tags.map(tag => (
+                <span
+                  key={tag.id}
+                  className={`inline-flex items-center ${
+                    isLoading ? 'bg-gray-500' : 'bg-blue-500 hover:bg-blue-600'
+                  } text-white text-xs px-2 py-1 rounded-lg transition-colors duration-200`}
+                >
+                  {tag.name}
+                  <button
+                    onClick={() => handleRemoveTag(tag.id)}
+                    className="ml-1.5 hover:text-red-300 focus:outline-none"
+                    disabled={isLoading}
                   >
-                    {tag.name}
-                    <button
-                      onClick={() => handleRemoveTag(tag.id)}
-                      className="ml-1.5 hover:text-red-300 focus:outline-none"
-                      disabled={isLoading}
+                    ×
+                  </button>
+                </span>
+              ))}
+              {tags.length === 0 && (
+                <span className="text-gray-400 text-xs">아직 태그가 없습니다</span>
+              )}
+            </div>
+          </div>
+
+          {exifData && (
+            <div className="mt-4 bg-black bg-opacity-50 text-white p-4 rounded-lg">
+              <h3 className="text-sm font-medium mb-2">EXIF 정보</h3>
+              <div className="space-y-1 text-xs">
+                {exifData.make && exifData.model && (
+                  <p>카메라: {exifData.make} {exifData.model}</p>
+                )}
+                {exifData.dateTime && (
+                  <p>촬영 일시: {exifData.dateTime}</p>
+                )}
+                {exifData.exposureTime && (
+                  <p>노출 시간: {exifData.exposureTime}</p>
+                )}
+                {exifData.fNumber && (
+                  <p>F값: {exifData.fNumber}</p>
+                )}
+                {exifData.isoSpeedRatings && (
+                  <p>ISO: {exifData.isoSpeedRatings}</p>
+                )}
+                {exifData.focalLength && (
+                  <p>초점 거리: {exifData.focalLength}</p>
+                )}
+                {exifData.imageWidth && exifData.imageHeight && (
+                  <p>이미지 크기: {exifData.imageWidth} × {exifData.imageHeight}</p>
+                )}
+                {exifData.latitude && exifData.longitude && (
+                  <p>
+                    위치: {exifData.latitude.toFixed(6)}, {exifData.longitude.toFixed(6)}
+                    <a
+                      href={`https://www.google.com/maps?q=${exifData.latitude},${exifData.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-2 text-blue-300 hover:text-blue-400"
                     >
-                      ×
-                    </button>
-                  </span>
-                ))}
-                {tags.length === 0 && (
-                  <span className="text-gray-400 text-xs">아직 태그가 없습니다</span>
+                      지도에서 보기
+                    </a>
+                  </p>
                 )}
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         <button
