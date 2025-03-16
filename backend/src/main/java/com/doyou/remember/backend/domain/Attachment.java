@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -29,7 +30,12 @@ public class Attachment {
         joinColumns = @JoinColumn(name = "attachment_id"),
         inverseJoinColumns = @JoinColumn(name = "tag_id")
     )
+    @JsonManagedReference
     private Set<Tag> tags = new HashSet<>();
+
+    @OneToOne(mappedBy = "attachment", cascade = CascadeType.ALL)
+    @JsonManagedReference
+    private ExifData exifData;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
@@ -56,6 +62,13 @@ public class Attachment {
     public void clearTags() {
         for (Tag tag : new HashSet<>(tags)) {
             removeTag(tag);
+        }
+    }
+
+    public void setExifData(ExifData exifData) {
+        this.exifData = exifData;
+        if (exifData != null) {
+            exifData.setAttachment(this);
         }
     }
 } 

@@ -6,17 +6,20 @@ interface Tag {
 }
 
 export interface TagSearchProps {
-  onTagSelect: (tags: string[]) => void;
+  onTagSelect?: (tags: string[]) => void;
   selectedTags: string[];
+  onTagsChange: (tags: string[]) => void;
 }
 
-const TagSearch: React.FC<TagSearchProps> = ({ onTagSelect, selectedTags }) => {
+const TagSearch: React.FC<TagSearchProps> = ({ onTagSelect, selectedTags, onTagsChange }) => {
   const [tags, setTags] = useState<Tag[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchTags = async () => {
@@ -25,9 +28,11 @@ const TagSearch: React.FC<TagSearchProps> = ({ onTagSelect, selectedTags }) => {
         if (!response.ok) throw new Error('태그 목록을 가져오는데 실패했습니다');
         const data = await response.json();
         setTags(data);
+        setAvailableTags(data.map((tag: any) => tag.name));
         setIsLoading(false);
       } catch (error) {
         console.error('Error fetching tags:', error);
+        setError('태그 목록을 불러오는 중 오류가 발생했습니다.');
         setIsLoading(false);
       }
     };
@@ -57,7 +62,8 @@ const TagSearch: React.FC<TagSearchProps> = ({ onTagSelect, selectedTags }) => {
     const newSelectedTags = selectedTags.includes(tagName)
       ? selectedTags.filter(tag => tag !== tagName)
       : [...selectedTags, tagName];
-    onTagSelect(newSelectedTags);
+    if (onTagSelect) onTagSelect(newSelectedTags);
+    onTagsChange(newSelectedTags);
     setSearchTerm('');
     setShowSuggestions(false);
   };
@@ -66,6 +72,8 @@ const TagSearch: React.FC<TagSearchProps> = ({ onTagSelect, selectedTags }) => {
     tag.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
     !selectedTags.includes(tag.name)
   );
+
+  if (error) return <div className="text-red-500">{error}</div>;
 
   if (isLoading) {
     return (

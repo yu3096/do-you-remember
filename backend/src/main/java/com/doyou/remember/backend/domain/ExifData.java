@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import java.time.LocalDateTime;
 
@@ -17,6 +19,7 @@ public class ExifData {
 
     @OneToOne
     @JoinColumn(name = "attachment_id")
+    @JsonBackReference
     private Attachment attachment;
 
     private String make;              // 카메라 제조사
@@ -48,5 +51,9 @@ public class ExifData {
         this.longitude = longitude;
         this.imageWidth = imageWidth;
         this.imageHeight = imageHeight;
+    }
+
+    public void setAttachment(Attachment attachment) {
+        this.attachment = attachment;
     }
 } 

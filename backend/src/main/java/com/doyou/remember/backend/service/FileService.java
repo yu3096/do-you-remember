@@ -2,6 +2,7 @@ package com.doyou.remember.backend.service;
 
 import com.doyou.remember.backend.domain.Attachment;
 import com.doyou.remember.backend.domain.ExifData;
+import com.doyou.remember.backend.dto.SearchCriteria;
 import com.doyou.remember.backend.repository.AttachmentRepository;
 import com.doyou.remember.backend.repository.ExifDataRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +38,13 @@ public class FileService {
 
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("jpg", "jpeg", "png", "gif");
     private static final long MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+
+    @Transactional
+    public List<Attachment> uploadMultiple(List<MultipartFile> files) {
+        return files.stream()
+                .map(this::upload)
+                .collect(Collectors.toList());
+    }
 
     @Transactional
     public Attachment upload(MultipartFile file) {
@@ -133,5 +142,9 @@ public class FileService {
     public ExifData getExifData(Long attachmentId) {
         return exifDataRepository.findById(attachmentId)
                 .orElse(null);
+    }
+
+    public List<Attachment> searchFiles(SearchCriteria criteria) {
+        return attachmentRepository.findBySearchCriteria(criteria);
     }
 } 
