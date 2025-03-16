@@ -2,6 +2,7 @@ package com.doyou.remember.backend.controller;
 
 import com.doyou.remember.backend.domain.Attachment;
 import com.doyou.remember.backend.domain.ExifData;
+import com.doyou.remember.backend.dto.SearchCriteria;
 import com.doyou.remember.backend.service.FileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
@@ -10,11 +11,14 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/files")
@@ -23,9 +27,9 @@ public class FileController {
     private final FileService fileService;
 
     @PostMapping("/upload")
-    public ResponseEntity<Attachment> uploadFile(@RequestParam("file") MultipartFile file) {
-        Attachment attachment = fileService.upload(file);
-        return ResponseEntity.ok(attachment);
+    public ResponseEntity<List<Attachment>> uploadFiles(@RequestParam("files") List<MultipartFile> files) {
+        List<Attachment> attachments = fileService.uploadMultiple(files);
+        return ResponseEntity.ok(attachments);
     }
 
     @GetMapping("/list")
@@ -37,6 +41,32 @@ public class FileController {
     @GetMapping("/search")
     public ResponseEntity<List<Attachment>> searchFilesByTags(@RequestParam(required = false) Set<String> tags) {
         List<Attachment> files = fileService.getFilesByTags(tags);
+        return ResponseEntity.ok(files);
+    }
+
+    @GetMapping("/search/advanced")
+    public ResponseEntity<List<Attachment>> searchFiles(
+            @RequestParam(required = false) Set<String> tags,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate,
+            @RequestParam(required = false) String make,
+            @RequestParam(required = false) String model,
+            @RequestParam(required = false) String fNumber,
+            @RequestParam(required = false) String exposureTime,
+            @RequestParam(required = false) String isoSpeedRatings) {
+        
+        SearchCriteria criteria = SearchCriteria.builder()
+                .tags(tags)
+                .startDate(startDate != null ? startDate.atStartOfDay() : null)
+                .endDate(endDate != null ? endDate.plusDays(1).atStartOfDay() : null)
+                .make(make)
+                .model(model)
+                .fNumber(fNumber)
+                .exposureTime(exposureTime)
+                .isoSpeedRatings(isoSpeedRatings)
+                .build();
+                
+        List<Attachment> files = fileService.searchFiles(criteria);
         return ResponseEntity.ok(files);
     }
 

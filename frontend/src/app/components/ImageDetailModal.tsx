@@ -44,6 +44,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({ file, onClose }) =>
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [exifData, setExifData] = useState<ExifData | null>(null);
+  const [showDetails, setShowDetails] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -241,183 +242,173 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({ file, onClose }) =>
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
-      <div className="relative w-full h-full flex items-center justify-center">
-        <div className="absolute top-4 left-4 z-10">
-          <div className="bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg">
-            <p className="text-sm font-medium">{file.fileName}</p>
-            <p className="text-xs opacity-80">{formatFileSize(file.fileSize)}</p>
-            <p className="text-xs opacity-80">{file.fileType.split('/')[1].toUpperCase()}</p>
-          </div>
-        </div>
-
-        <div className="absolute top-4 right-16 z-10 w-64">
-          <div className="bg-black bg-opacity-50 text-white p-4 rounded-lg">
-            <h3 className="text-sm font-medium mb-2">태그</h3>
-            
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
-                placeholder="새 태그 입력"
-                className="flex-1 bg-black bg-opacity-50 text-white text-sm px-3 py-1.5 rounded-lg border border-gray-600 focus:outline-none focus:border-blue-500 placeholder-gray-400"
-                disabled={isLoading}
+      <div className="relative w-full h-full flex">
+        {/* 왼쪽: 이미지 영역 */}
+        <div className={`flex-1 flex items-center justify-center p-4 ${showDetails ? 'pr-[400px]' : ''}`}>
+          <div className="relative flex flex-col items-center">
+            <div ref={containerRef} className="relative">
+              <Image
+                src={`/api/files/${file.storagePath}`}
+                alt={file.fileName}
+                width={imageSize.width}
+                height={imageSize.height}
+                style={{
+                  transform: `rotate(${rotation}deg) scale(${scale})`,
+                  maxWidth: '100%',
+                  height: 'auto',
+                  objectFit: 'contain'
+                }}
+                className="rounded-lg shadow-lg transition-transform duration-200"
               />
+            </div>
+            
+            {/* 이미지 조작 버튼 */}
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-2 bg-black/50 backdrop-blur-sm px-4 py-2 rounded-full">
               <button
-                onClick={handleAddTag}
-                className={`${
-                  isLoading 
-                    ? 'bg-gray-500 cursor-not-allowed' 
-                    : 'bg-blue-500 hover:bg-blue-600'
-                } text-white px-3 py-1.5 rounded-lg text-sm transition-colors duration-200 flex items-center`}
-                disabled={isLoading}
+                onClick={handleRotateLeft}
+                className="px-3 py-1 text-white hover:bg-white/10 rounded-lg transition-colors"
+                title="왼쪽으로 회전"
               >
-                {isLoading ? (
-                  <span className="inline-block animate-spin mr-1">⌛</span>
-                ) : null}
-                추가
+                ↺
+              </button>
+              <button
+                onClick={handleRotateRight}
+                className="px-3 py-1 text-white hover:bg-white/10 rounded-lg transition-colors"
+                title="오른쪽으로 회전"
+              >
+                ↻
+              </button>
+              <div className="w-px bg-white/20 mx-1" />
+              <button
+                onClick={handleDownload}
+                className="px-3 py-1 text-white hover:bg-white/10 rounded-lg transition-colors"
+                title="다운로드"
+              >
+                ↓
+              </button>
+              <button
+                onClick={handleOpenOriginal}
+                className="px-3 py-1 text-white hover:bg-white/10 rounded-lg transition-colors"
+                title="원본 보기"
+              >
+                ⤢
               </button>
             </div>
-            {error && (
-              <div className="text-red-400 text-xs px-2 py-1 bg-red-900 bg-opacity-25 rounded">
-                {error}
+          </div>
+        </div>
+
+        {/* 오른쪽: 메타데이터 영역 */}
+        <div className={`absolute right-0 top-0 bottom-0 w-[400px] bg-white transition-transform duration-300 transform ${showDetails ? 'translate-x-0' : 'translate-x-full'}`}>
+          <div className="p-6 space-y-6 h-full overflow-y-auto">
+            {/* 파일 정보 */}
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-gray-900">{file.fileName}</h3>
+              <div className="text-sm text-gray-600">
+                <p>크기: {formatFileSize(file.fileSize)}</p>
+                <p>형식: {file.fileType.split('/')[1].toUpperCase()}</p>
+              </div>
+            </div>
+
+            {/* EXIF 데이터 섹션 */}
+            {exifData && (
+              <div className="space-y-3">
+                <h4 className="font-medium text-gray-900">촬영 정보</h4>
+                <div className="space-y-2 text-sm text-gray-600">
+                  {exifData.make && exifData.model && (
+                    <p>카메라: {exifData.make} {exifData.model}</p>
+                  )}
+                  {exifData.dateTime && (
+                    <p>촬영 일시: {new Date(exifData.dateTime).toLocaleString()}</p>
+                  )}
+                  {exifData.exposureTime && (
+                    <p>노출 시간: {exifData.exposureTime}초</p>
+                  )}
+                  {exifData.fNumber && (
+                    <p>조리개: f/{exifData.fNumber}</p>
+                  )}
+                  {exifData.isoSpeedRatings && (
+                    <p>ISO: {exifData.isoSpeedRatings}</p>
+                  )}
+                  {exifData.focalLength && (
+                    <p>초점 거리: {exifData.focalLength}mm</p>
+                  )}
+                  {exifData.imageWidth && exifData.imageHeight && (
+                    <p>해상도: {exifData.imageWidth} × {exifData.imageHeight}</p>
+                  )}
+                  {exifData.latitude && exifData.longitude && (
+                    <div>
+                      <p>위치:</p>
+                      <a
+                        href={`https://www.google.com/maps?q=${exifData.latitude},${exifData.longitude}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500 hover:underline"
+                      >
+                        지도에서 보기
+                      </a>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
-            
-            <div className="mt-2 flex flex-wrap gap-1">
-              {tags.map(tag => (
-                <span
-                  key={tag.id}
-                  className={`inline-flex items-center ${
-                    isLoading ? 'bg-gray-500' : 'bg-blue-500 hover:bg-blue-600'
-                  } text-white text-xs px-2 py-1 rounded-lg transition-colors duration-200`}
-                >
-                  {tag.name}
-                  <button
-                    onClick={() => handleRemoveTag(tag.id)}
-                    className="ml-1.5 hover:text-red-300 focus:outline-none"
-                    disabled={isLoading}
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-              {tags.length === 0 && (
-                <span className="text-gray-400 text-xs">아직 태그가 없습니다</span>
-              )}
-            </div>
-          </div>
 
-          {exifData && (
-            <div className="mt-4 bg-black bg-opacity-50 text-white p-4 rounded-lg">
-              <h3 className="text-sm font-medium mb-2">EXIF 정보</h3>
-              <div className="space-y-1 text-xs">
-                {exifData.make && exifData.model && (
-                  <p>카메라: {exifData.make} {exifData.model}</p>
-                )}
-                {exifData.dateTime && (
-                  <p>촬영 일시: {exifData.dateTime}</p>
-                )}
-                {exifData.exposureTime && (
-                  <p>노출 시간: {exifData.exposureTime}</p>
-                )}
-                {exifData.fNumber && (
-                  <p>F값: {exifData.fNumber}</p>
-                )}
-                {exifData.isoSpeedRatings && (
-                  <p>ISO: {exifData.isoSpeedRatings}</p>
-                )}
-                {exifData.focalLength && (
-                  <p>초점 거리: {exifData.focalLength}</p>
-                )}
-                {exifData.imageWidth && exifData.imageHeight && (
-                  <p>이미지 크기: {exifData.imageWidth} × {exifData.imageHeight}</p>
-                )}
-                {exifData.latitude && exifData.longitude && (
-                  <p>
-                    위치: {exifData.latitude.toFixed(6)}, {exifData.longitude.toFixed(6)}
-                    <a
-                      href={`https://www.google.com/maps?q=${exifData.latitude},${exifData.longitude}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="ml-2 text-blue-300 hover:text-blue-400"
+            {/* 태그 섹션 */}
+            <div className="space-y-3">
+              <h4 className="font-medium text-gray-900">태그</h4>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
+                  placeholder="새 태그 추가"
+                  className="flex-1 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  onClick={handleAddTag}
+                  disabled={isLoading}
+                  className="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+                >
+                  추가
+                </button>
+              </div>
+              {error && <p className="text-red-500 text-sm">{error}</p>}
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag) => (
+                  <span
+                    key={tag.id}
+                    className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm"
+                  >
+                    {tag.name}
+                    <button
+                      onClick={() => handleRemoveTag(tag.id)}
+                      className="hover:text-red-500"
                     >
-                      지도에서 보기
-                    </a>
-                  </p>
-                )}
+                      ×
+                    </button>
+                  </span>
+                ))}
               </div>
             </div>
-          )}
-        </div>
-
-        <button
-          className="absolute top-4 right-4 bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-full z-10 transition-all duration-200"
-          onClick={onClose}
-        >
-          ✕
-        </button>
-
-        <div
-          ref={containerRef}
-          className="relative w-full h-full flex items-center justify-center"
-        >
-          <div className="relative flex items-center justify-center p-4">
-            <Image
-              src={`/api/files/${file.storagePath}`}
-              alt={file.fileName}
-              width={imageSize.width}
-              height={imageSize.height}
-              className="object-contain select-none"
-              style={{
-                transform: `rotate(${rotation}deg) scale(${scale})`,
-                transition: 'transform 0.2s ease',
-              }}
-              priority
-              quality={100}
-            />
           </div>
         </div>
 
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-4 z-10">
-          <button
-            className="text-white p-3 rounded-full transition-all duration-200"
-            style={{ backgroundColor: 'rgba(0, 0, 0, 0.2)' }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.4)'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.2)'}
-            onClick={handleRotateLeft}
-          >
-            ↺
-          </button>
-          <button
-            className="text-white p-3 rounded-full transition-all duration-200"
-            style={{ backgroundColor: 'rgba(0, 0, 0, 0.2)' }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.4)'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.2)'}
-            onClick={handleRotateRight}
-          >
-            ↻
-          </button>
-          <button
-            className="text-white px-4 py-2 rounded-lg transition-all duration-200"
-            style={{ backgroundColor: 'rgba(0, 0, 0, 0.2)' }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.4)'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.2)'}
-            onClick={handleOpenOriginal}
-          >
-            원본 보기
-          </button>
-          <button
-            className="text-white px-4 py-2 rounded-lg transition-all duration-200"
-            style={{ backgroundColor: 'rgba(0, 0, 0, 0.2)' }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.4)'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.2)'}
-            onClick={handleDownload}
-          >
-            다운로드
-          </button>
-        </div>
+        {/* 닫기 버튼 */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 text-white bg-black bg-opacity-50 rounded-full hover:bg-opacity-70"
+        >
+          ×
+        </button>
+
+        {/* 상세정보 토글 버튼 */}
+        <button
+          onClick={() => setShowDetails(!showDetails)}
+          className="absolute top-4 right-16 p-2 text-white bg-black bg-opacity-50 rounded-full hover:bg-opacity-70"
+          title={showDetails ? "상세정보 숨기기" : "상세정보 보기"}
+        >
+          {showDetails ? "→" : "←"}
+        </button>
       </div>
     </div>
   );

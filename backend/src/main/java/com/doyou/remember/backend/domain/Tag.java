@@ -1,5 +1,6 @@
 package com.doyou.remember.backend.domain;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Builder;
@@ -22,7 +23,7 @@ public class Tag {
     @Column(nullable = false, unique = true)
     private String name;
 
-    @JsonIgnore
+    @JsonBackReference
     @ManyToMany(mappedBy = "tags")
     private Set<Attachment> attachments = new HashSet<>();
 
