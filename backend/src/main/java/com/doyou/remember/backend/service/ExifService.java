@@ -19,6 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.io.File;
 import java.util.Optional;
 
 @Slf4j
@@ -40,7 +43,7 @@ public class ExifService {
                     .ifPresent(directory -> {
                         builder.make(getTagValue(directory, ExifIFD0Directory.TAG_MAKE));
                         builder.model(getTagValue(directory, ExifIFD0Directory.TAG_MODEL));
-                        builder.dateTime(getTagValue(directory, ExifIFD0Directory.TAG_DATETIME));
+                        builder.dateTimeStr(getTagValue(directory, ExifIFD0Directory.TAG_DATETIME));
                     });
 
             // 상세 EXIF 정보 추출
@@ -94,5 +97,15 @@ public class ExifService {
             log.warn("태그 값 추출 중 오류 발생: tagType={}, error={}", tagType, e.getMessage());
         }
         return null;
+    }
+
+    public Map<String, Object> extractExifData(File file) {
+        try {
+            // TODO: 실제 EXIF 데이터 추출 로직 구현
+            return new HashMap<>();
+        } catch (Exception e) {
+            log.error("EXIF 데이터 추출 중 오류 발생", e);
+            return Map.of();
+        }
     }
 } 

@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import ImageDetailModal from './ImageDetailModal';
 import SearchPanel from './SearchPanel';
 import { ArrowUpIcon, ArrowDownIcon, PhotoIcon, CalendarIcon, ArrowsUpDownIcon } from '@heroicons/react/24/outline';
+import CreateAlbum from './CreateAlbum';
 
 interface File {
   id: number;
@@ -28,43 +29,50 @@ const FileList: React.FC = () => {
   const [showSearchPanel, setShowSearchPanel] = useState(false);
   const [imageLoadErrors, setImageLoadErrors] = useState<Record<number, boolean>>({});
   const [sortField, setSortField] = useState<'fileName' | 'fileSize' | 'createdAt'>('createdAt');
+  const [showCreateAlbum, setShowCreateAlbum] = useState(false);
 
-  const fetchFiles = async (searchCriteria?: any) => {
+  const fetchFiles = useCallback(async (searchCriteria?: any) => {
     setIsLoading(true);
     try {
-      let url = '/api/files/list';
+      let url = '/api/v1/files/list';
       if (searchCriteria) {
-        url = '/api/files/search/advanced';
+        url = '/api/v1/files/search/advanced';
         const params = new URLSearchParams();
         Object.entries(searchCriteria).forEach(([key, value]) => {
-          if (value !== undefined) {
-            if (Array.isArray(value)) {
-              value.forEach(v => params.append(key, v));
-            } else {
-              params.append(key, value as string);
-            }
-          }
+          if (value) params.append(key, value.toString());
         });
-        url += `?${params.toString()}`;
+        url += '?' + params.toString();
       }
       
       const response = await fetch(url);
       if (!response.ok) {
-        throw new Error('파일 목록을 불러오는데 실패했습니다.');
+        throw new Error('Network response was not ok');
       }
       const data = await response.json();
+      console.log('Fetched files:', data);
       setFiles(data);
     } catch (error) {
       console.error('Error fetching files:', error);
-      setError('파일 목록을 불러오는데 실패했습니다.');
+      setError('Failed to fetch files');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchFiles();
-  }, []);
+  }, [fetchFiles]);
+
+  useEffect(() => {
+    const handleFileUpload = () => {
+      fetchFiles();
+    };
+
+    window.addEventListener('fileUploaded', handleFileUpload);
+    return () => {
+      window.removeEventListener('fileUploaded', handleFileUpload);
+    };
+  }, [fetchFiles]);
 
   const handleSearch = (criteria: any) => {
     fetchFiles(criteria);
@@ -177,20 +185,31 @@ const FileList: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <button
-          onClick={() => setShowSearchPanel(!showSearchPanel)}
-          className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-all ${
-            showSearchPanel
-              ? 'bg-blue-500 text-white shadow-md hover:bg-blue-600'
-              : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-          }`}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-          </svg>
-          고급 검색 {showSearchPanel ? '닫기' : '열기'}
-        </button>
+      <div className="mb-8 space-y-4">
+        <div className="flex gap-4">
+          <button
+            onClick={() => setShowSearchPanel(!showSearchPanel)}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-all ${
+              showSearchPanel
+                ? 'bg-blue-500 text-white shadow-md hover:bg-blue-600'
+                : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+            </svg>
+            고급 검색 {showSearchPanel ? '닫기' : '열기'}
+          </button>
+          <button
+            onClick={() => setShowCreateAlbum(true)}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+            </svg>
+            새 앨범 만들기
+          </button>
+        </div>
         {showSearchPanel && (
           <div className="mt-4">
             <SearchPanel 
@@ -239,12 +258,13 @@ const FileList: React.FC = () => {
                     </div>
                   ) : (
                     <Image
-                      src={`/api/files/${file.storagePath}`}
+                      src={`/api/v1/files/content/${file.storagePath}`}
                       alt={file.fileName}
                       fill
                       className="object-cover transition-transform duration-300 group-hover:scale-105"
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       onError={() => setImageLoadErrors(prev => ({ ...prev, [file.id]: true }))}
+                      unoptimized
                     />
                   )}
                 </div>
@@ -281,6 +301,22 @@ const FileList: React.FC = () => {
         <ImageDetailModal
           file={selectedFile}
           onClose={() => setSelectedFile(null)}
+          onUpdate={(updatedFile) => {
+            setFiles(files.map(file => 
+              file.id === updatedFile.id ? updatedFile : file
+            ));
+            setSelectedFile(updatedFile);
+          }}
+        />
+      )}
+
+      {showCreateAlbum && (
+        <CreateAlbum
+          onClose={() => setShowCreateAlbum(false)}
+          onAlbumCreated={() => {
+            setShowCreateAlbum(false);
+            // 앨범이 생성된 후 필요한 작업 수행
+          }}
         />
       )}
     </div>

@@ -8,6 +8,7 @@ import lombok.Setter;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Entity
 @Getter
@@ -24,7 +25,10 @@ public class ExifData {
 
     private String make;              // 카메라 제조사
     private String model;             // 카메라 모델
-    private String dateTime;          // 촬영 일시
+    
+    @Column(name = "date_time")
+    private LocalDateTime dateTime;   // 촬영 일시
+    
     private String exposureTime;      // 노출 시간
     private String fNumber;           // F값
     private String isoSpeedRatings;   // ISO 감도
@@ -35,14 +39,14 @@ public class ExifData {
     private Integer imageHeight;      // 이미지 높이
 
     @Builder
-    public ExifData(Attachment attachment, String make, String model, String dateTime,
+    public ExifData(Attachment attachment, String make, String model, String dateTimeStr,
                    String exposureTime, String fNumber, String isoSpeedRatings,
                    String focalLength, Double latitude, Double longitude,
                    Integer imageWidth, Integer imageHeight) {
         this.attachment = attachment;
         this.make = make;
         this.model = model;
-        this.dateTime = dateTime;
+        this.dateTime = dateTimeStr != null ? LocalDateTime.parse(dateTimeStr, DateTimeFormatter.ofPattern("yyyy:MM:dd HH:mm:ss")) : null;
         this.exposureTime = exposureTime;
         this.fNumber = fNumber;
         this.isoSpeedRatings = isoSpeedRatings;
@@ -55,5 +59,12 @@ public class ExifData {
 
     public void setAttachment(Attachment attachment) {
         this.attachment = attachment;
+    }
+
+    public String getLocation() {
+        if (latitude == null || longitude == null) {
+            return null;
+        }
+        return String.format("%.6f,%.6f", latitude, longitude);
     }
 } 

@@ -19,10 +19,21 @@ spring:
     multipart:
       max-file-size: 50MB
       max-request-size: 100MB
+  web:
+    resources:
+      add-mappings: true
 
 server:
   port: 8080
+  servlet:
+    context-path: /
 
 file:
   upload:
-    location: ${FILE_UPLOAD_PATH:./uploads}  # 기본값으로 프로젝트 루트의 uploads 디렉토리 사용 
+    location: ${FILE_UPLOAD_PATH:./uploads}
+
+spring.web.resources.add-mappings: true
+
+web:
+  resources:
+    static-locations: classpath:/static/ 
