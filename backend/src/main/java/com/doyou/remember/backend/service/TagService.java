@@ -1,8 +1,8 @@
 package com.doyou.remember.backend.service;
 
-import com.doyou.remember.backend.domain.Attachment;
+import com.doyou.remember.backend.domain.FileInfo;
 import com.doyou.remember.backend.domain.Tag;
-import com.doyou.remember.backend.repository.AttachmentRepository;
+import com.doyou.remember.backend.repository.FileInfoRepository;
 import com.doyou.remember.backend.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class TagService {
     private final TagRepository tagRepository;
-    private final AttachmentRepository attachmentRepository;
+    private final FileInfoRepository fileInfoRepository;
 
     @Transactional
     public Tag createTag(String name) {
@@ -28,22 +28,22 @@ public class TagService {
     }
 
     @Transactional
-    public void addTagsToAttachment(Long attachmentId, Set<String> tagNames) {
-        Attachment attachment = attachmentRepository.findById(attachmentId)
-            .orElseThrow(() -> new IllegalArgumentException("Attachment not found"));
+    public void addTagsToAttachment(Long fileId, Set<String> tagNames) {
+        FileInfo fileInfo = fileInfoRepository.findById(fileId)
+            .orElseThrow(() -> new IllegalArgumentException("File not found"));
 
         Set<Tag> newTags = tagNames.stream()
             .map(this::createTag)
             .collect(Collectors.toSet());
 
-        newTags.forEach(attachment::addTag);
-        attachmentRepository.save(attachment);
+        newTags.forEach(fileInfo::addTag);
+        fileInfoRepository.save(fileInfo);
     }
 
     @Transactional(readOnly = true)
-    public Set<Tag> getTagsByAttachment(Long attachmentId) {
-        return attachmentRepository.findById(attachmentId)
-            .map(Attachment::getTags)
+    public Set<Tag> getTagsByAttachment(Long fileId) {
+        return fileInfoRepository.findById(fileId)
+            .map(FileInfo::getTags)
             .orElse(new HashSet<>());
     }
 
@@ -53,13 +53,13 @@ public class TagService {
     }
 
     @Transactional
-    public void removeTagFromAttachment(Long attachmentId, Long tagId) {
-        Attachment attachment = attachmentRepository.findById(attachmentId)
-            .orElseThrow(() -> new IllegalArgumentException("Attachment not found"));
+    public void removeTagFromAttachment(Long fileId, Long tagId) {
+        FileInfo fileInfo = fileInfoRepository.findById(fileId)
+            .orElseThrow(() -> new IllegalArgumentException("File not found"));
         Tag tag = tagRepository.findById(tagId)
             .orElseThrow(() -> new IllegalArgumentException("Tag not found"));
 
-        attachment.removeTag(tag);
-        attachmentRepository.save(attachment);
+        fileInfo.removeTag(tag);
+        fileInfoRepository.save(fileInfo);
     }
 } 

@@ -4,50 +4,66 @@ import React, { useState } from 'react';
 import FileUpload from './components/FileUpload';
 import Timeline from './components/Timeline';
 import FileList from './components/FileList';
+import AlbumView from './components/AlbumView';
+import { Squares2X2Icon, ClockIcon, PhotoIcon } from '@heroicons/react/24/outline';
 
-type ViewMode = 'grid' | 'timeline';
+type ViewMode = 'grid' | 'timeline' | 'album';
 
 export default function Home() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
+  const handleUploadComplete = () => {
+    // 업로드 완료 후 필요한 작업
+  };
+
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Do You Remember?</h1>
-          <div className="flex items-center space-x-4">
+        <div className="mb-8">
+          <FileUpload onUploadComplete={handleUploadComplete} />
+        </div>
+
+        <div className="mb-6">
+          <div className="flex justify-center gap-2">
             <button
               onClick={() => setViewMode('grid')}
-              className={`px-4 py-2 rounded-lg transition-all duration-200 ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
                 viewMode === 'grid'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  ? 'bg-blue-500 text-white shadow-md'
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
               }`}
             >
-              기본 보기
+              <Squares2X2Icon className="w-5 h-5" />
+              <span>기본 보기</span>
             </button>
             <button
               onClick={() => setViewMode('timeline')}
-              className={`px-4 py-2 rounded-lg transition-all duration-200 ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
                 viewMode === 'timeline'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  ? 'bg-blue-500 text-white shadow-md'
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
               }`}
             >
-              타임라인
+              <ClockIcon className="w-5 h-5" />
+              <span>타임라인</span>
+            </button>
+            <button
+              onClick={() => setViewMode('album')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                viewMode === 'album'
+                  ? 'bg-blue-500 text-white shadow-md'
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <PhotoIcon className="w-5 h-5" />
+              <span>앨범</span>
             </button>
           </div>
         </div>
-        
-        <FileUpload onUploadComplete={() => window.location.reload()} />
-        
-        <div className="mt-8">
-          {viewMode === 'grid' ? (
-            <FileList />
-          ) : (
-            <Timeline />
-          )}
-        </div>
+
+        {viewMode === 'grid' && <FileList />}
+        {viewMode === 'timeline' && <Timeline />}
+        {viewMode === 'album' && <AlbumView />}
       </div>
     </main>
   );

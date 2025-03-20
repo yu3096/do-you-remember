@@ -30,28 +30,26 @@ const Timeline: React.FC = () => {
   useEffect(() => {
     const fetchFiles = async () => {
       try {
-        const response = await fetch('/api/files/list');
-        if (!response.ok) throw new Error('파일 목록을 가져오는데 실패했습니다');
+        setIsLoading(true);
+        const response = await fetch('/api/v1/files/list');
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
         const data = await response.json();
-        
+        setFiles(data);
+
         // EXIF 데이터 가져오기
         const filesWithExif = await Promise.all(
-          data.map(async (file: File) => {
-            try {
-              const exifResponse = await fetch(`/api/files/${file.id}/exif`);
-              if (exifResponse.ok) {
-                const exifData = await exifResponse.json();
-                return { ...file, exifData };
-              }
-            } catch (error) {
-              console.error('EXIF 데이터 가져오기 실패:', error);
+          data.map(async (file: any) => {
+            const exifResponse = await fetch(`/api/v1/files/${file.id}/exif`);
+            if (exifResponse.ok) {
+              const exifData = await exifResponse.json();
+              return { ...file, exif: exifData };
             }
             return file;
           })
         );
 
-        setFiles(filesWithExif);
-        
         // 날짜별로 그룹화
         const groups = filesWithExif.reduce((acc: TimelineGroup[], file: File) => {
           if (!file.exifData?.dateTime) return acc;
