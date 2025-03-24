@@ -4,23 +4,19 @@ import ImageDetailModal from './ImageDetailModal';
 import SearchPanel from './SearchPanel';
 import { ArrowUpIcon, ArrowDownIcon, PhotoIcon, CalendarIcon, ArrowsUpDownIcon } from '@heroicons/react/24/outline';
 import CreateAlbum from './CreateAlbum';
-
-interface File {
-  id: number;
-  fileName: string;
-  storagePath: string;
-  fileSize: number;
-  fileType: string;
-  createdAt: string;
-  tags?: { id: number; name: string }[];
-}
+import { FileInfo } from '../types/album';
+import { format } from 'date-fns';
+import { ko } from 'date-fns/locale';
+import { useToast } from '../contexts/ToastContext';
+import LoadingSpinner from './LoadingSpinner';
+import ImageSkeleton from './ImageSkeleton';
 
 type SortOption = 'name' | 'date' | 'size';
 type SortDirection = 'asc' | 'desc';
 
 const FileList: React.FC = () => {
-  const [files, setFiles] = useState<File[]>([]);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<FileInfo[]>([]);
+  const [selectedFile, setSelectedFile] = useState<FileInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortOption, setSortOption] = useState<SortOption>('date');
@@ -30,6 +26,7 @@ const FileList: React.FC = () => {
   const [imageLoadErrors, setImageLoadErrors] = useState<Record<number, boolean>>({});
   const [sortField, setSortField] = useState<'fileName' | 'fileSize' | 'createdAt'>('createdAt');
   const [showCreateAlbum, setShowCreateAlbum] = useState(false);
+  const { showToast } = useToast();
 
   const fetchFiles = useCallback(async (searchCriteria?: any) => {
     setIsLoading(true);
@@ -53,11 +50,12 @@ const FileList: React.FC = () => {
       setFiles(data);
     } catch (error) {
       console.error('Error fetching files:', error);
-      setError('Failed to fetch files');
+      setError(error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.');
+      showToast(error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.', 'error');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [showToast]);
 
   useEffect(() => {
     fetchFiles();
@@ -106,7 +104,7 @@ const FileList: React.FC = () => {
     setSelectedTags(tags);
   };
 
-  const sortFiles = (filesToSort: File[]) => {
+  const sortFiles = (filesToSort: FileInfo[]) => {
     return [...filesToSort].sort((a, b) => {
       let comparison = 0;
       switch (sortOption) {
@@ -157,27 +155,37 @@ const FileList: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
-        <p className="text-gray-600">이미지를 불러오는 중...</p>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {[...Array(8)].map((_, index) => (
+          <ImageSkeleton key={index} />
+        ))}
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 text-center">
-        <div className="rounded-full bg-red-100 p-4">
-          <svg className="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-        </div>
-        <p className="text-red-600 font-medium">{error}</p>
+      <div className="flex flex-col items-center justify-center p-8 text-center">
+        <p className="text-red-500 mb-4">{error}</p>
         <button
-          onClick={() => window.location.reload()}
-          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          onClick={fetchFiles}
+          className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
         >
           다시 시도
+        </button>
+      </div>
+    );
+  }
+
+  if (files.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-center">
+        <p className="text-gray-500 mb-4">등록된 파일이 없습니다.</p>
+        <button
+          onClick={fetchFiles}
+          className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+        >
+          새로고침
         </button>
       </div>
     );
@@ -241,54 +249,27 @@ const FileList: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredAndSortedFiles.map((file) => (
               <div
                 key={file.id}
-                className="group cursor-pointer rounded-xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-all duration-300"
+                className="relative aspect-square group cursor-pointer"
                 onClick={() => setSelectedFile(file)}
               >
-                <div className="relative aspect-square">
-                  {imageLoadErrors[file.id] ? (
-                    <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-                      <div className="text-center p-4">
-                        <PhotoIcon className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                        <p className="text-sm text-gray-500">이미지를 불러올 수 없습니다</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <Image
-                      src={`/api/v1/files/content/${file.storagePath}`}
-                      alt={file.fileName}
-                      fill
-                      className="object-cover transition-transform duration-300 group-hover:scale-105"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      onError={() => setImageLoadErrors(prev => ({ ...prev, [file.id]: true }))}
-                      unoptimized
-                    />
-                  )}
-                </div>
-                
-                <div className="p-4 space-y-2">
-                  <p className="font-medium text-gray-900 truncate">{file.fileName}</p>
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <CalendarIcon className="w-4 h-4" />
-                    <span>{formatDate(file.createdAt)}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {file.tags?.slice(0, 3).map(tag => (
-                      <span
-                        key={tag.id}
-                        className="px-2 py-0.5 text-xs bg-blue-50 text-blue-600 rounded-full"
-                      >
-                        {tag.name}
-                      </span>
-                    ))}
-                    {file.tags && file.tags.length > 3 && (
-                      <span className="px-2 py-0.5 text-xs bg-gray-50 text-gray-500 rounded-full">
-                        +{file.tags.length - 3}
-                      </span>
-                    )}
+                <img
+                  src={`/api/v1/files/content/${file.storagePath}`}
+                  alt={file.fileName}
+                  className="w-full h-full object-cover rounded-lg"
+                  onError={(e) => {
+                    console.error('이미지 로딩 실패:', e);
+                    e.currentTarget.src = '/placeholder.jpg';
+                  }}
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300 flex items-center justify-center">
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <span className="text-white text-sm">
+                      {format(new Date(file.createdAt), 'yyyy년 MM월 dd일', { locale: ko })}
+                    </span>
                   </div>
                 </div>
               </div>

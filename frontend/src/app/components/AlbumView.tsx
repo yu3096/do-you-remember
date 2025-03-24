@@ -6,6 +6,10 @@ import { Album, FileInfo } from '../types/album';
 import AlbumDetailModal from './AlbumDetailModal';
 import SelectAlbumCoverModal from './SelectAlbumCoverModal';
 import EditAlbumModal from './EditAlbumModal';
+import { useToast } from '../contexts/ToastContext';
+import LoadingSpinner from './LoadingSpinner';
+import ImageSkeleton from './ImageSkeleton';
+import CreateAlbum from './CreateAlbum';
 
 type SortOption = 'date' | 'count' | 'title';
 
@@ -20,6 +24,7 @@ export default function AlbumView() {
   const [isCoverModalOpen, setIsCoverModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [albumForCover, setAlbumForCover] = useState<Album | null>(null);
+  const { showToast } = useToast();
 
   useEffect(() => {
     fetchAlbums();
@@ -28,6 +33,7 @@ export default function AlbumView() {
   const fetchAlbums = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await fetch(`/api/v1/files/albums?groupBy=${groupBy}&minPhotos=${minPhotos}`);
       if (!response.ok) {
         throw new Error('앨범을 불러오는데 실패했습니다.');
@@ -36,6 +42,7 @@ export default function AlbumView() {
       setAlbums(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
+      showToast(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.', 'error');
     } finally {
       setLoading(false);
     }
@@ -75,8 +82,10 @@ export default function AlbumView() {
 
       // 앨범 목록 새로고침
       await fetchAlbums();
+      showToast('앨범 커버가 설정되었습니다.', 'success');
     } catch (error) {
       console.error('앨범 커버 설정 중 오류가 발생했습니다:', error);
+      showToast(error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.', 'error');
       throw error;
     }
   };
@@ -101,29 +110,47 @@ export default function AlbumView() {
 
       // 앨범 목록 새로고침
       await fetchAlbums();
+      showToast('앨범이 수정되었습니다.', 'success');
     } catch (error) {
       console.error('앨범 수정 중 오류가 발생했습니다:', error);
+      showToast(error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.', 'error');
       throw error;
     }
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {[...Array(8)].map((_, index) => (
+          <ImageSkeleton key={index} />
+        ))}
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center text-red-500 p-4">
-        <p>{error}</p>
+      <div className="flex flex-col items-center justify-center p-8 text-center">
+        <p className="text-red-500 mb-4">{error}</p>
         <button
           onClick={fetchAlbums}
-          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
         >
           다시 시도
+        </button>
+      </div>
+    );
+  }
+
+  if (albums.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-center">
+        <p className="text-gray-500 mb-4">생성된 앨범이 없습니다.</p>
+        <button
+          onClick={() => setIsEditModalOpen(true)}
+          className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+        >
+          새 앨범 만들기
         </button>
       </div>
     );
