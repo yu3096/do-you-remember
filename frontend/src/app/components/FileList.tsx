@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import ImageDetailModal from './ImageDetailModal';
@@ -253,24 +255,54 @@ const FileList: React.FC = () => {
             {filteredAndSortedFiles.map((file) => (
               <div
                 key={file.id}
-                className="relative aspect-square group cursor-pointer"
+                className="group relative bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
                 onClick={() => setSelectedFile(file)}
               >
-                <img
-                  src={`/api/v1/files/content/${file.storagePath}`}
-                  alt={file.fileName}
-                  className="w-full h-full object-cover rounded-lg"
-                  onError={(e) => {
-                    console.error('이미지 로딩 실패:', e);
-                    e.currentTarget.src = '/placeholder.jpg';
-                  }}
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300 flex items-center justify-center">
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <span className="text-white text-sm">
-                      {format(new Date(file.createdAt), 'yyyy년 MM월 dd일', { locale: ko })}
-                    </span>
+                <div className="aspect-square relative">
+                  <Image
+                    src={`/api/v1/files/${file.id}/content`}
+                    alt={file.originalFileName}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    onError={() => setImageLoadErrors(prev => ({ ...prev, [file.id]: true }))}
+                    priority={false}
+                    loading="lazy"
+                  />
+                  {imageLoadErrors[file.id] && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                      <PhotoIcon className="w-12 h-12 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+                <div className="p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {file.originalFileName}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {formatDate(file.createdAt)}
+                      </p>
+                    </div>
+                    <div className="flex-shrink-0">
+                      <p className="text-xs text-gray-500">
+                        {formatFileSize(file.fileSize)}
+                      </p>
+                    </div>
                   </div>
+                  {file.tags && file.tags.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {file.tags.map((tag) => (
+                        <span
+                          key={tag.id}
+                          className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
+                        >
+                          {tag.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -282,12 +314,7 @@ const FileList: React.FC = () => {
         <ImageDetailModal
           file={selectedFile}
           onClose={() => setSelectedFile(null)}
-          onUpdate={(updatedFile) => {
-            setFiles(files.map(file => 
-              file.id === updatedFile.id ? updatedFile : file
-            ));
-            setSelectedFile(updatedFile);
-          }}
+          onUpdate={fetchFiles}
         />
       )}
 
@@ -296,7 +323,7 @@ const FileList: React.FC = () => {
           onClose={() => setShowCreateAlbum(false)}
           onAlbumCreated={() => {
             setShowCreateAlbum(false);
-            // 앨범이 생성된 후 필요한 작업 수행
+            fetchFiles();
           }}
         />
       )}

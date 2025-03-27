@@ -1,3 +1,9 @@
+export interface Tag {
+  id: number;
+  name: string;
+  createdAt: string;
+}
+
 export interface Album {
   id: number;
   title: string;
@@ -22,6 +28,7 @@ export interface FileInfo {
   fileSize: number;
   fileType: string;
   createdAt: string;
+  tags?: Tag[];
 }
 
 export interface File {

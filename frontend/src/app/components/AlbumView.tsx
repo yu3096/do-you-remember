@@ -10,6 +10,7 @@ import { useToast } from '../contexts/ToastContext';
 import LoadingSpinner from './LoadingSpinner';
 import ImageSkeleton from './ImageSkeleton';
 import CreateAlbum from './CreateAlbum';
+import AlbumCard from './AlbumCard';
 
 type SortOption = 'date' | 'count' | 'title';
 
@@ -23,6 +24,7 @@ export default function AlbumView() {
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
   const [isCoverModalOpen, setIsCoverModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [albumForCover, setAlbumForCover] = useState<Album | null>(null);
   const { showToast } = useToast();
 
@@ -83,6 +85,7 @@ export default function AlbumView() {
       // 앨범 목록 새로고침
       await fetchAlbums();
       showToast('앨범 커버가 설정되었습니다.', 'success');
+      setIsCoverModalOpen(false);
     } catch (error) {
       console.error('앨범 커버 설정 중 오류가 발생했습니다:', error);
       showToast(error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.', 'error');
@@ -118,26 +121,40 @@ export default function AlbumView() {
     }
   };
 
+  const handleDeleteAlbum = async (albumId: number) => {
+    try {
+      const response = await fetch(`/api/v1/files/albums/${albumId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('앨범 삭제에 실패했습니다.');
+      }
+
+      // 앨범 목록 새로고침
+      await fetchAlbums();
+      showToast('앨범이 삭제되었습니다.', 'success');
+    } catch (error) {
+      console.error('앨범 삭제 중 오류가 발생했습니다:', error);
+      showToast(error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.', 'error');
+      throw error;
+    }
+  };
+
+  const handleCreateAlbum = async (data: any) => {
+    await fetchAlbums();
+    setIsCreateModalOpen(false);
+    showToast('앨범이 생성되었습니다.', 'success');
+  };
+
   if (loading) {
-    return (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {[...Array(8)].map((_, index) => (
-          <ImageSkeleton key={index} />
-        ))}
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 text-center">
-        <p className="text-red-500 mb-4">{error}</p>
-        <button
-          onClick={fetchAlbums}
-          className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-        >
-          다시 시도
-        </button>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-red-500">{error}</div>
       </div>
     );
   }
@@ -147,7 +164,7 @@ export default function AlbumView() {
       <div className="flex flex-col items-center justify-center p-8 text-center">
         <p className="text-gray-500 mb-4">생성된 앨범이 없습니다.</p>
         <button
-          onClick={() => setIsEditModalOpen(true)}
+          onClick={() => setIsCreateModalOpen(true)}
           className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
         >
           새 앨범 만들기
@@ -161,8 +178,8 @@ export default function AlbumView() {
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">앨범</h1>
         <button
-          onClick={() => setIsEditModalOpen(true)}
-          className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+          onClick={() => setIsCreateModalOpen(true)}
+          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
         >
           새 앨범 만들기
         </button>
@@ -236,61 +253,17 @@ export default function AlbumView() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {sortedAlbums.map((album) => (
-            <div
+            <AlbumCard
               key={album.id}
-              className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer group"
+              album={album}
               onClick={() => setSelectedAlbum(album)}
-            >
-              <div className="relative aspect-square">
-                {album.coverImageId ? (
-                  <>
-                    <img
-                      src={`/api/v1/files/content/${album.files.find(f => f.id === album.coverImageId)?.storagePath}`}
-                      alt={album.title}
-                      className="w-full h-full object-cover"
-                      style={{ objectPosition: album.coverImagePosition || 'center' }}
-                      onError={(e) => {
-                        console.error('이미지 로딩 실패:', e);
-                        e.currentTarget.src = '/placeholder.jpg';
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300 flex items-center justify-center">
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setAlbumForCover(album);
-                            setIsCoverModalOpen(true);
-                          }}
-                          className="px-3 py-1 bg-white text-gray-800 rounded-md hover:bg-gray-100 shadow-md"
-                        >
-                          커버 설정
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setAlbumForCover(album);
-                            setIsEditModalOpen(true);
-                          }}
-                          className="px-3 py-1 bg-white text-gray-800 rounded-md hover:bg-gray-100 shadow-md"
-                        >
-                          편집
-                        </button>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                    <span className="text-gray-400">커버 이미지 없음</span>
-                  </div>
-                )}
-              </div>
-              <div className="p-4">
-                <h2 className="text-xl font-semibold mb-2">{album.title}</h2>
-                <p className="text-gray-600">{album.description}</p>
-                <p className="text-sm text-gray-500 mt-2">{album.photoCount}장의 사진</p>
-              </div>
-            </div>
+              onDelete={handleDeleteAlbum}
+              onUpdate={fetchAlbums}
+              onCoverImageClick={(album) => {
+                setAlbumForCover(album);
+                setIsCoverModalOpen(true);
+              }}
+            />
           ))}
         </div>
       </div>
@@ -323,6 +296,13 @@ export default function AlbumView() {
           }}
           album={albumForCover}
           onSave={handleEditAlbum}
+        />
+      )}
+
+      {isCreateModalOpen && (
+        <CreateAlbum
+          onClose={() => setIsCreateModalOpen(false)}
+          onAlbumCreated={handleCreateAlbum}
         />
       )}
     </div>

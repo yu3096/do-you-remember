@@ -101,51 +101,52 @@ export default function SelectAlbumCoverModal({ isOpen, onClose, album, onSelect
             </div>
           </div>
 
-          {/* 미리보기 영역 */}
+          {/* 이미지 위치 조정 영역 */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">미리보기</h3>
-            <div className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
+            <h3 className="text-lg font-medium">이미지 위치 조정</h3>
+            <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
               {selectedFile ? (
-                <img
-                  ref={imageRef}
-                  src={`/api/v1/files/content/${selectedFile.storagePath}`}
-                  alt={selectedFile.originalFileName}
-                  className="w-full h-full object-cover cursor-move select-none"
-                  style={{
-                    objectPosition: `${position.x}% ${position.y}%`,
-                    userSelect: 'none',
-                    WebkitUserDrag: 'none'
-                  }}
-                  onMouseDown={handleMouseDown}
-                  draggable={false}
-                />
+                <>
+                  <img
+                    ref={imageRef}
+                    src={`/api/v1/files/content/${selectedFile.storagePath}`}
+                    alt={selectedFile.originalFileName}
+                    className="w-full h-full object-cover"
+                    style={{ objectPosition: `${position.x}% ${position.y}%` }}
+                    onMouseDown={handleMouseDown}
+                  />
+                  <div
+                    className="absolute w-4 h-4 bg-blue-500 rounded-full cursor-move"
+                    style={{
+                      left: `${position.x}%`,
+                      top: `${position.y}%`,
+                      transform: 'translate(-50%, -50%)',
+                    }}
+                    onMouseDown={handleMouseDown}
+                  />
+                </>
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+                <div className="flex items-center justify-center h-full text-gray-400">
                   이미지를 선택해주세요
                 </div>
               )}
             </div>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleSelect}
+                disabled={!selectedFile}
+                className="px-4 py-2 text-white bg-blue-500 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                선택 완료
+              </button>
+            </div>
           </div>
-        </div>
-
-        <div className="flex justify-end gap-2 mt-6">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-          >
-            취소
-          </button>
-          <button
-            onClick={handleSelect}
-            disabled={!selectedFile}
-            className={`px-4 py-2 rounded-lg ${
-              selectedFile
-                ? 'bg-blue-500 text-white hover:bg-blue-600'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
-          >
-            선택
-          </button>
         </div>
       </div>
     </div>

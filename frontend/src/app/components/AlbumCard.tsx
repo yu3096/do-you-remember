@@ -1,5 +1,8 @@
+'use client';
+
 import React, { useState } from 'react';
 import Image from 'next/image';
+import { useToast } from '../contexts/ToastContext';
 
 interface AlbumCardProps {
   album: {
@@ -7,6 +10,8 @@ interface AlbumCardProps {
     title: string;
     description: string;
     photoCount: number;
+    coverImageId?: number;
+    coverImagePosition?: string;
     files: {
       id: number;
       fileName: string;
@@ -14,15 +19,18 @@ interface AlbumCardProps {
     }[];
   };
   onClick: () => void;
-  onDelete: () => void;
+  onDelete: (albumId: number) => void;
+  onUpdate: () => void;
+  onCoverImageClick: (album: any) => void;
 }
 
-const AlbumCard: React.FC<AlbumCardProps> = ({ album, onClick, onDelete }) => {
+const AlbumCard: React.FC<AlbumCardProps> = ({ album, onClick, onDelete, onUpdate, onCoverImageClick }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { showToast } = useToast();
 
   const handleCoverImageClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsModalOpen(true);
+    onCoverImageClick(album);
   };
 
   return (
@@ -32,12 +40,21 @@ const AlbumCard: React.FC<AlbumCardProps> = ({ album, onClick, onDelete }) => {
         onClick={onClick}
       >
         <Image
-          src={`/api/v1/files/content/${album.files[0]?.storagePath}`}
+          src={`/api/v1/files/content/${
+            album.coverImageId
+              ? album.files.find(f => f.id === album.coverImageId)?.storagePath
+              : album.files[0]?.storagePath
+          }`}
           alt={album.title}
           fill
           className="object-cover"
+          style={{ objectPosition: album.coverImagePosition || 'center' }}
+          onError={(e) => {
+            console.error('이미지 로딩 실패:', e);
+            e.currentTarget.src = '/placeholder.jpg';
+          }}
         />
-        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-opacity duration-300 flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300 flex items-center justify-center">
           <div className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-center">
             <h3 className="text-xl font-bold mb-2">{album.title}</h3>
             <p className="text-sm">{album.photoCount}장의 사진</p>
@@ -49,7 +66,7 @@ const AlbumCard: React.FC<AlbumCardProps> = ({ album, onClick, onDelete }) => {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onDelete();
+            onDelete(album.id);
           }}
           className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
         >
@@ -67,41 +84,6 @@ const AlbumCard: React.FC<AlbumCardProps> = ({ album, onClick, onDelete }) => {
           </svg>
         </button>
       </div>
-
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-            <h3 className="text-xl font-bold mb-4">대표 이미지 선택</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {album.files.map(file => (
-                <div
-                  key={file.id}
-                  className="relative aspect-square rounded-lg overflow-hidden cursor-pointer hover:ring-4 hover:ring-blue-500"
-                  onClick={() => {
-                    // TODO: 대표 이미지 변경 로직 구현
-                    setIsModalOpen(false);
-                  }}
-                >
-                  <Image
-                    src={`/api/v1/files/content/${file.storagePath}`}
-                    alt={file.fileName}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 flex justify-end">
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
-              >
-                닫기
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
