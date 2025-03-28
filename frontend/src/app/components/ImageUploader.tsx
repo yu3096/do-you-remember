@@ -81,7 +81,7 @@ export default function ImageUploader({ onUploadSuccess }: ImageUploaderProps) {
     formData.append('file', selectedFile);
 
     try {
-      const response = await fetch('/api/files/upload', {
+      const response = await fetch('/api/v1/files/upload', {
         method: 'POST',
         body: formData,
       });

@@ -28,6 +28,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        // 파일 컨텐츠 접근을 위한 리소스 핸들러
         registry.addResourceHandler("/api/v1/files/content/**")
                 .addResourceLocations("file:" + uploadPath + "/")
                 .setCacheControl(CacheControl.maxAge(3600, TimeUnit.SECONDS))

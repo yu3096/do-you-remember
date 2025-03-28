@@ -3,18 +3,21 @@ package com.doyou.remember.backend.domain;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-
+import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 @Entity
 @Getter
+@Setter
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 public class Tag {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,13 +28,14 @@ public class Tag {
 
     @JsonBackReference
     @ManyToMany(mappedBy = "tags")
+    @Builder.Default
     private Set<Attachment> attachments = new HashSet<>();
 
-    @CreationTimestamp
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @Builder
-    public Tag(String name) {
-        this.name = name;
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
     }
 } 

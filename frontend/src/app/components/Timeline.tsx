@@ -26,22 +26,28 @@ const Timeline: React.FC = () => {
   const [timelineGroups, setTimelineGroups] = useState<TimelineGroup[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [imageLoadErrors, setImageLoadErrors] = useState<Record<number, boolean>>({});
+
+  const handleImageError = (event: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    const img = event.target as HTMLImageElement;
+    const fileId = parseInt(img.getAttribute('data-file-id') || '0');
+    setImageLoadErrors(prev => ({ ...prev, [fileId]: true }));
+  };
 
   useEffect(() => {
     const fetchFiles = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/v1/files/list');
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
+        const response = await fetch('/api/files/list');
+        if (!response.ok) throw new Error('파일 목록을 가져오는데 실패했습니다');
         const data = await response.json();
         setFiles(data);
 
         // EXIF 데이터 가져오기
         const filesWithExif = await Promise.all(
           data.map(async (file: any) => {
-            const exifResponse = await fetch(`/api/v1/files/${file.id}/exif`);
+            const exifResponse = await fetch(`/api/files/${file.id}/exif`);
             if (exifResponse.ok) {
               const exifData = await exifResponse.json();
               return { ...file, exif: exifData };
@@ -71,9 +77,10 @@ const Timeline: React.FC = () => {
           new Date(b.date).getTime() - new Date(a.date).getTime()
         );
         setTimelineGroups(groups);
-        setIsLoading(false);
       } catch (error) {
         console.error('Error fetching files:', error);
+        setError('파일 목록을 불러오는 중 오류가 발생했습니다.');
+      } finally {
         setIsLoading(false);
       }
     };
@@ -118,13 +125,12 @@ const Timeline: React.FC = () => {
                   className="relative group cursor-pointer rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300"
                   onClick={() => setSelectedFile(file)}
                 >
-                  <Image
-                    src={`/api/files/${file.storagePath}`}
+                  <img
+                    src={`/api/files/content/${file.storagePath}`}
                     alt={file.fileName}
-                    width={300}
-                    height={225}
-                    className="w-full h-auto object-cover"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    className="w-full h-full object-cover"
+                    onError={handleImageError}
+                    data-file-id={file.id}
                   />
                   <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-30 transition-all duration-300">
                   </div>

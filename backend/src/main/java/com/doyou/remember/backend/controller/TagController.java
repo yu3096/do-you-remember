@@ -3,7 +3,7 @@ package com.doyou.remember.backend.controller;
 import com.doyou.remember.backend.domain.Tag;
 import com.doyou.remember.backend.service.TagService;
 import com.doyou.remember.backend.dto.TagRequest;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import lombok.extern.slf4j.Slf4j;
@@ -12,19 +12,26 @@ import java.util.List;
 import java.util.Set;
 
 @RestController
-@RequestMapping("/api/v1/files")
-@RequiredArgsConstructor
+@RequestMapping("/api/v1")
 @Slf4j
 public class TagController {
-    private final TagService tagService;
 
-    @GetMapping("/{id}/tags")
+    @Autowired
+    private TagService tagService;
+
+    @GetMapping("/tags")
+    public ResponseEntity<List<Tag>> getAllTags() {
+        log.info("Getting all tags");
+        return ResponseEntity.ok(tagService.getAllTags());
+    }
+
+    @GetMapping("/files/{id}/tags")
     public ResponseEntity<Set<Tag>> getFileTags(@PathVariable Long id) {
         log.info("Getting tags for file: {}", id);
         return ResponseEntity.ok(tagService.getTagsByAttachment(id));
     }
 
-    @PostMapping("/{id}/tags")
+    @PostMapping("/files/{id}/tags")
     public ResponseEntity<Void> addTagToFile(
             @PathVariable Long id,
             @RequestBody TagRequest tagRequest) {
@@ -33,7 +40,7 @@ public class TagController {
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping("/{id}/tags/{tagId}")
+    @DeleteMapping("/files/{id}/tags/{tagId}")
     public ResponseEntity<Void> removeTagFromFile(
             @PathVariable Long id,
             @PathVariable Long tagId) {

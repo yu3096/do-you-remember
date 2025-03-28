@@ -24,7 +24,7 @@ const TagSearch: React.FC<TagSearchProps> = ({ onTagSelect, selectedTags, onTags
   useEffect(() => {
     const fetchTags = async () => {
       try {
-        const response = await fetch('/api/tags');
+        const response = await fetch('/api/v1/tags');
         if (!response.ok) throw new Error('태그 목록을 가져오는데 실패했습니다');
         const data = await response.json();
         setTags(data);

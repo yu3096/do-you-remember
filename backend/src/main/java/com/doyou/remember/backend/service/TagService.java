@@ -22,7 +22,8 @@ public class TagService {
     @Transactional
     public Tag createTag(String name) {
         if (tagRepository.existsByName(name)) {
-            return tagRepository.findByName(name).get();
+            return tagRepository.findByName(name)
+                .orElseThrow(() -> new IllegalStateException("Tag not found despite exists check"));
         }
         return tagRepository.save(Tag.builder().name(name).build());
     }
