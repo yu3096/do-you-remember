@@ -30,16 +30,20 @@ export default function SelectAlbumCoverModal({ isOpen, onClose, album, onSelect
     e.preventDefault(); // 기본 드래그 동작 방지
 
     const rect = imageRef.current.getBoundingClientRect();
-    const newX = e.clientX - startPos.x;
-    const newY = e.clientY - startPos.y;
+    const newX = e.clientX - rect.left;
+    const newY = e.clientY - rect.top;
 
     // 이미지 영역을 벗어나지 않도록 제한
     const maxX = rect.width;
     const maxY = rect.height;
     
+    // 위치를 백분율로 변환 (0-100)
+    const xPercent = Math.max(0, Math.min(100, (newX / maxX) * 100));
+    const yPercent = Math.max(0, Math.min(100, (newY / maxY) * 100));
+    
     setPosition({
-      x: Math.max(0, Math.min(maxX, newX)),
-      y: Math.max(0, Math.min(maxY, newY))
+      x: xPercent,
+      y: yPercent
     });
   };
 
