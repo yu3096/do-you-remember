@@ -12,6 +12,7 @@ import { ko } from 'date-fns/locale';
 import { useToast } from '../contexts/ToastContext';
 import LoadingSpinner from './LoadingSpinner';
 import ImageSkeleton from './ImageSkeleton';
+import CreateAlbumButton from './CreateAlbumButton';
 
 type SortOption = 'name' | 'date' | 'size';
 type SortDirection = 'asc' | 'desc';
@@ -195,108 +196,86 @@ const FileList: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8 space-y-4">
-        <div className="flex gap-4">
-          <button
-            onClick={() => setShowSearchPanel(!showSearchPanel)}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-all ${
-              showSearchPanel
-                ? 'bg-blue-500 text-white shadow-md hover:bg-blue-600'
-                : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-            }`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-            </svg>
-            고급 검색 {showSearchPanel ? '닫기' : '열기'}
-          </button>
-          <button
-            onClick={() => setShowCreateAlbum(true)}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
-            </svg>
-            새 앨범 만들기
-          </button>
-        </div>
-        {showSearchPanel && (
-          <div className="mt-4">
-            <SearchPanel 
-              onSearch={handleSearch} 
-              onTagsChange={setSelectedTags} 
-              selectedTags={selectedTags}
-              files={files}
-            />
-          </div>
-        )}
-      </div>
-
       <div className="space-y-6">
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <div className="flex flex-wrap gap-2">
-            <div className="flex-1" />
-            <SortButton option="name" label="이름순" />
-            <SortButton option="date" label="날짜순" />
-            <SortButton option="size" label="크기순" />
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowSearchPanel(!showSearchPanel)}
+              className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+              </svg>
+              <span>검색</span>
+            </button>
+            <CreateAlbumButton onClick={() => setShowCreateAlbum(true)} />
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
+              className="p-2 text-gray-500 hover:text-gray-700"
+            >
+              {sortDirection === 'asc' ? (
+                <ArrowUpIcon className="w-5 h-5" />
+              ) : (
+                <ArrowDownIcon className="w-5 h-5" />
+              )}
+            </button>
+            <select
+              value={sortField}
+              onChange={(e) => setSortField(e.target.value as 'fileName' | 'fileSize' | 'createdAt')}
+              className="px-3 py-2 border rounded-lg bg-white"
+            >
+              <option value="fileName">파일명</option>
+              <option value="fileSize">크기</option>
+              <option value="createdAt">날짜</option>
+            </select>
           </div>
         </div>
 
-        {filteredAndSortedFiles.length === 0 ? (
-          <div className="flex flex-col items-center justify-center min-h-[200px] gap-4 text-center bg-white rounded-xl shadow-sm p-8">
-            <PhotoIcon className="w-16 h-16 text-gray-400" />
-            <div>
-              <p className="text-gray-500 mb-1">업로드된 파일이 없습니다.</p>
-              <p className="text-gray-400 text-sm">이미지를 업로드하여 시작해보세요.</p>
-            </div>
+        {showSearchPanel && (
+          <SearchPanel
+            onSearch={handleSearch}
+            onTagsChange={setSelectedTags}
+            selectedTags={selectedTags}
+            files={files}
+          />
+        )}
+
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {[...Array(8)].map((_, index) => (
+              <ImageSkeleton key={index} />
+            ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {filteredAndSortedFiles.map((file) => (
               <div
                 key={file.id}
-                className="group relative bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                className="relative group cursor-pointer rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 aspect-square"
                 onClick={() => setSelectedFile(file)}
               >
-                <div className="aspect-square relative">
-                  <Image
-                    src={`/api/v1/files/${file.id}/content`}
-                    alt={file.originalFileName}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                    onError={() => setImageLoadErrors(prev => ({ ...prev, [file.id]: true }))}
-                    priority={false}
-                    loading="lazy"
-                  />
-                  {imageLoadErrors[file.id] && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-                      <PhotoIcon className="w-12 h-12 text-gray-400" />
-                    </div>
-                  )}
+                <img
+                  src={`/api/v1/files/content/${file.storagePath}`}
+                  alt={file.fileName}
+                  className="w-full h-full object-cover"
+                  onError={() => setImageLoadErrors(prev => ({ ...prev, [file.id]: true }))}
+                  data-file-id={file.id}
+                />
+                <div className="absolute inset-0 bg-black opacity-20">
                 </div>
-                <div className="p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {file.originalFileName}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {formatDate(file.createdAt)}
-                      </p>
-                    </div>
-                    <div className="flex-shrink-0">
-                      <p className="text-xs text-gray-500">
-                        {formatFileSize(file.fileSize)}
-                      </p>
-                    </div>
-                  </div>
+                <div className="absolute bottom-0 left-0 right-0 p-4">
+                  <p className="text-sm text-white truncate">{file.fileName}</p>
+                  <p className="text-xs text-white opacity-75">
+                    {format(new Date(file.createdAt), 'yyyy년 MM월 dd일', { locale: ko })}
+                  </p>
                   {file.tags && file.tags.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-1 mt-2">
                       {file.tags.map((tag) => (
                         <span
                           key={tag.id}
-                          className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
+                          className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-500/30 text-white"
                         >
                           {tag.name}
                         </span>
@@ -323,7 +302,7 @@ const FileList: React.FC = () => {
           onClose={() => setShowCreateAlbum(false)}
           onAlbumCreated={() => {
             setShowCreateAlbum(false);
-            fetchFiles();
+            showToast('앨범이 생성되었습니다.', 'success');
           }}
         />
       )}

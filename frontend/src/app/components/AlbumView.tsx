@@ -11,6 +11,7 @@ import LoadingSpinner from './LoadingSpinner';
 import ImageSkeleton from './ImageSkeleton';
 import CreateAlbum from './CreateAlbum';
 import AlbumCard from './AlbumCard';
+import CreateAlbumButton from './CreateAlbumButton';
 
 type SortOption = 'date' | 'count' | 'title';
 
@@ -177,12 +178,7 @@ export default function AlbumView() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">앨범</h1>
-        <button
-          onClick={() => setIsCreateModalOpen(true)}
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-        >
-          새 앨범 만들기
-        </button>
+        <CreateAlbumButton onClick={() => setIsCreateModalOpen(true)} />
       </div>
 
       <div className="space-y-6">
@@ -251,51 +247,69 @@ export default function AlbumView() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sortedAlbums.map((album) => (
-            <AlbumCard
-              key={album.id}
-              album={album}
-              onClick={() => setSelectedAlbum(album)}
-              onDelete={handleDeleteAlbum}
-              onUpdate={fetchAlbums}
-              onCoverImageClick={(album) => {
-                setAlbumForCover(album);
-                setIsCoverModalOpen(true);
-              }}
-            />
-          ))}
-        </div>
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {[...Array(8)].map((_, index) => (
+              <ImageSkeleton key={index} />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {sortedAlbums.map((album) => (
+              <AlbumCard
+                key={album.id}
+                album={album}
+                onSelect={() => setSelectedAlbum(album)}
+                onEdit={() => {
+                  setSelectedAlbum(album);
+                  setIsEditModalOpen(true);
+                }}
+                onDelete={() => handleDeleteAlbum(album.id)}
+                onCoverSelect={() => {
+                  setAlbumForCover(album);
+                  setIsCoverModalOpen(true);
+                }}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {selectedAlbum && (
         <AlbumDetailModal
           album={selectedAlbum}
           onClose={() => setSelectedAlbum(null)}
+          onEdit={() => {
+            setSelectedAlbum(null);
+            setIsEditModalOpen(true);
+          }}
+          onDelete={() => handleDeleteAlbum(selectedAlbum.id)}
+          onCoverSelect={() => {
+            setAlbumForCover(selectedAlbum);
+            setIsCoverModalOpen(true);
+          }}
         />
       )}
 
-      {albumForCover && (
+      {isCoverModalOpen && albumForCover && (
         <SelectAlbumCoverModal
-          isOpen={isCoverModalOpen}
+          album={albumForCover}
           onClose={() => {
             setIsCoverModalOpen(false);
             setAlbumForCover(null);
           }}
-          album={albumForCover}
           onSelect={handleSelectCover}
         />
       )}
 
-      {albumForCover && (
+      {isEditModalOpen && selectedAlbum && (
         <EditAlbumModal
-          isOpen={isEditModalOpen}
+          album={selectedAlbum}
           onClose={() => {
             setIsEditModalOpen(false);
-            setAlbumForCover(null);
+            setSelectedAlbum(null);
           }}
-          album={albumForCover}
-          onSave={handleEditAlbum}
+          onEdit={handleEditAlbum}
         />
       )}
 
